@@ -3,14 +3,21 @@ package com.example.myapplication;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.Intent;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -31,34 +38,58 @@ import java.util.concurrent.ExecutionException;
 public class MainActivity extends AppCompatActivity {
 
     String City = "Japan";
-    //Your Key
+
     String Key = "9251a1201edd950ccea542a7a0f7acdd";
 
     String url1 = "https://api.openweathermap.org/data/2.5/weather?q=" + City + "&appid=" + Key;
 
-    TextView txtCity,txtTime,txtValue,txtValueFeelLike,txtValueHumidity,txtValueVision;
-
+    TextView txtCity,txtValue,txtValueFeelLike,txtValueHumidity,txtValueVision;
     String nameIcon = "10d";
-
     EditText editText;
-
-    Button btnLoading, back;
-
+    Button loading,back;
     ImageView imgIcon;
-
     RelativeLayout relativeLayoutMain;
     RelativeLayout relativeLayout;
+    Animation topAnim, bottomAnim;
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        setContentView(R.layout.activity_main);
+
+        imgIcon = findViewById(R.id.imgIcon);
+        txtValue = findViewById(R.id.Value);
+        editText = findViewById(R.id.input);
+        txtCity = findViewById(R.id.City);
+        txtValueFeelLike = findViewById(R.id.TitleFeelLike);
+        txtValueHumidity = findViewById(R.id.ValueHumidity);
+        txtValueVision = findViewById(R.id.ValueVision);
+        relativeLayout = findViewById(R.id.rlWeather);
+        relativeLayoutMain = findViewById(R.id.rlMain_Ac);
+        loading = findViewById(R.id.loading);
+        back = findViewById(R.id.back);
+
+        topAnim = AnimationUtils.loadAnimation(this,R.anim.top_anim);
+        bottomAnim = AnimationUtils.loadAnimation(this,R.anim.bottom_anim);
+
+        imgIcon.setAnimation(topAnim);
+        txtValue.setAnimation(bottomAnim);
+
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+    }
     public class DownloadImage extends AsyncTask<String, Void, Bitmap> {
 
         @Override
         protected Bitmap doInBackground(String... strings) {
             Bitmap bitmap = null;
-
             URL url;
-
             HttpURLConnection httpURLConnection;
-
             InputStream inputStream;
 
             try {
@@ -66,18 +97,13 @@ public class MainActivity extends AppCompatActivity {
                 url = new URL(strings[0]);
 
                 httpURLConnection = (HttpURLConnection) url.openConnection();
-
                 inputStream = httpURLConnection.getInputStream();
-
                 bitmap = BitmapFactory.decodeStream(inputStream);
-
-
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
             return bitmap;
         }
     }
@@ -87,13 +113,9 @@ public class MainActivity extends AppCompatActivity {
         protected String doInBackground(String... strings) {
 
             String result = "";
-
             URL url;
-
             HttpURLConnection httpURLConnection;
-
             InputStream inputStream;
-
             InputStreamReader inputStreamReader;
 
             try {
@@ -101,9 +123,7 @@ public class MainActivity extends AppCompatActivity {
                 url = new URL(strings[0]);
 
                 httpURLConnection = (HttpURLConnection) url.openConnection();
-
                 inputStream = httpURLConnection.getInputStream();
-
                 inputStreamReader = new InputStreamReader(inputStream);
 
                 int data = inputStreamReader.read();
@@ -111,17 +131,13 @@ public class MainActivity extends AppCompatActivity {
                 while(data != -1) {
 
                     result += (char) data;
-
                     data = inputStreamReader.read();
-
                 }
-
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
             return result;
         }
     }
@@ -129,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
     public void loading(View view) {
 
         editText.setVisibility(View.INVISIBLE);
-        btnLoading.setVisibility(View.INVISIBLE);
+        loading.setVisibility(View.INVISIBLE);
         relativeLayout.setVisibility(View.VISIBLE);
         relativeLayoutMain.setBackgroundColor(Color.parseColor("#E6E6E6"));
 
@@ -140,52 +156,31 @@ public class MainActivity extends AppCompatActivity {
         DownloadTask downloadTask = new DownloadTask();
 
         try {
-
             String result = "abc";
-
             result = downloadTask.execute(url).get();
-
             Log.i("Result:",result);
-
             JSONObject jsonObject = new JSONObject(result);
-
             JSONObject main = jsonObject.getJSONObject("main");
-
             String temp = main.getString("temp");
-
             String humidity = main.getString("humidity");
-
             String feel_like = main.getString("feels_like");
-
             String visibility = jsonObject.getString("visibility");
-
             nameIcon = jsonObject.getJSONArray("weather").getJSONObject(0).getString("icon");
-
             Log.i("Name Icon",nameIcon);
-
             Long time = jsonObject.getLong("dt");
-
-            String sTime = new SimpleDateFormat("dd-M-yyyy hh:mm:ss", Locale.ENGLISH)
+            String Time = new SimpleDateFormat("dd-M-yyyy hh:mm:ss", Locale.ENGLISH)
                     .format(new Date(time * 1000));
 
             txtCity.setText(City);
-
             txtValue.setText(temp + "°");
-
             txtValueVision.setText(visibility);
-
             txtValueHumidity.setText(humidity);
-
             txtValueFeelLike.setText(feel_like);
 
             DownloadImage downloadImage = new DownloadImage();
-
             String urlIcon = " https://openweathermap.org/img/wn/"+ nameIcon +"@2x.png";
-
             Bitmap bitmap = downloadImage.execute(urlIcon).get();
-
             imgIcon.setImageBitmap(bitmap);
-
         } catch (ExecutionException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -193,43 +188,5 @@ public class MainActivity extends AppCompatActivity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        editText = findViewById(R.id.input);
-
-        txtCity = findViewById(R.id.City);
-
-        txtTime = findViewById(R.id.Time);
-
-        txtValue = findViewById(R.id.Value);
-
-        txtValueFeelLike = findViewById(R.id.TitleFeelLike);
-
-        txtValueHumidity = findViewById(R.id.ValueHumidity);
-
-        txtValueVision = findViewById(R.id.ValueVision);
-
-        imgIcon = findViewById(R.id.imgIcon);
-
-        btnLoading = findViewById(R.id.Loading);
-
-        relativeLayout = findViewById(R.id.rlWeather);
-
-        relativeLayoutMain = findViewById(R.id.rlMain_Ac);
-
-        back = findViewById(R.id.back);
-
-        back.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
     }
 }
